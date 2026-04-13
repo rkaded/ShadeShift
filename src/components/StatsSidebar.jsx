@@ -17,7 +17,7 @@ function StatRow({ label, value, unit }) {
   );
 }
 
-export default function StatsSidebar({ stats, placements }) {
+export default function StatsSidebar({ stats, placements, onRemove }) {
   const {
     avgReduction,
     maxReduction,
@@ -26,12 +26,6 @@ export default function StatsSidebar({ stats, placements }) {
     energySavingsKwh,
     equityScore,
   } = stats;
-
-  // Tally placements by type
-  const counts = {};
-  for (const { type } of placements) {
-    counts[type] = (counts[type] || 0) + 1;
-  }
 
   return (
     <aside className="sidebar">
@@ -54,12 +48,18 @@ export default function StatsSidebar({ stats, placements }) {
       {placements.length > 0 && (
         <section className="stat-group">
           <h3 className="stat-group-title">Placed</h3>
-          {Object.entries(counts).map(([type, count]) => (
-            <div key={type} className="stat-row">
+          {placements.map(({ type }, index) => (
+            <div key={index} className="stat-row placement-row">
               <span className="stat-label">
                 {INTERVENTIONS[type].emoji} {INTERVENTIONS[type].label}
               </span>
-              <span className="stat-value">×{count}</span>
+              <button
+                className="remove-btn"
+                onClick={() => onRemove(index)}
+                title="Remove this intervention"
+              >
+                ✕
+              </button>
             </div>
           ))}
         </section>
@@ -69,7 +69,7 @@ export default function StatsSidebar({ stats, placements }) {
         <h3 className="stat-group-title">Temperature Scale</h3>
         <div className="legend-bar" />
         <div className="legend-labels">
-          <span>24°C</span><span>31°C</span><span>38°C</span>
+          <span>31°C</span><span>40°C</span><span>49°C</span>
         </div>
       </section>
     </aside>

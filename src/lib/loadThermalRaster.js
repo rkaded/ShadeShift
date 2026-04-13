@@ -18,7 +18,8 @@ export async function loadThermalRaster() {
   try {
     const tiff = await fromUrl(TIFF_URL);
     const image = await tiff.getImage();
-    const [rawData] = await image.readRasters({ interleave: true });
+    const rasters = await image.readRasters();
+    const rawData = rasters[0];
 
     const srcWidth  = image.getWidth();
     const srcHeight = image.getHeight();
@@ -41,11 +42,14 @@ export async function loadThermalRaster() {
         const v01 = rawData[y1 * srcWidth + x0];
         const v11 = rawData[y1 * srcWidth + x1];
 
+        // Replace NaN (nodata) pixels with a neutral fallback so they don't
+        // propagate through the bilinear interpolation.
+        const safe = (v) => (isNaN(v) || !isFinite(v)) ? 35 : v;
         out[row * GRID_COLS + col] =
-          v00 * (1 - tx) * (1 - ty) +
-          v10 * tx       * (1 - ty) +
-          v01 * (1 - tx) * ty       +
-          v11 * tx       * ty;
+          safe(v00) * (1 - tx) * (1 - ty) +
+          safe(v10) * tx       * (1 - ty) +
+          safe(v01) * (1 - tx) * ty       +
+          safe(v11) * tx       * ty;
       }
     }
 

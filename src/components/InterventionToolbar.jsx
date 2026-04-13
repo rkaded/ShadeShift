@@ -8,7 +8,7 @@
 import React from 'react';
 import { INTERVENTIONS } from '../lib/constants';
 
-export default function InterventionToolbar({ activeTool, onSelectTool }) {
+export default function InterventionToolbar({ activeTool, onSelectTool, heatmapVisible, onToggleHeatmap, onClearAll }) {
   return (
     <header className="toolbar">
       <span className="toolbar-brand">ShadeShift</span>
@@ -27,6 +27,23 @@ export default function InterventionToolbar({ activeTool, onSelectTool }) {
           </button>
         ))}
       </nav>
+
+      <div className="toolbar-actions">
+        <button
+          className={`action-btn ${heatmapVisible ? 'action-btn--active' : ''}`}
+          onClick={onToggleHeatmap}
+          title="Toggle heat map overlay"
+        >
+          {heatmapVisible ? '🌡️ Hide Heat Map' : '🌡️ Show Heat Map'}
+        </button>
+        <button
+          className="action-btn action-btn--danger"
+          onClick={onClearAll}
+          title="Remove all placed interventions"
+        >
+          🗑️ Clear All
+        </button>
+      </div>
 
       <span className="toolbar-hint">
         {activeTool

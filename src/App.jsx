@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import MapView from './components/MapView';
 import ThermalCanvas from './components/ThermalCanvas';
 import InterventionToolbar from './components/InterventionToolbar';
@@ -18,8 +18,9 @@ import './styles/app.css';
  *  └──────────────────────────────┴────────────────┘
  */
 export default function App() {
-  const [activeTool, setActiveTool] = useState(null); // 'tree' | 'shade' | 'greenRoof' | 'coolPavement' | 'water'
-  const { grid, placements, applyIntervention, stats } = useHeatGrid();
+  const [activeTool, setActiveTool] = useState(null);
+  const [heatmapVisible, setHeatmapVisible] = useState(true);
+  const { grid, placements, applyIntervention, removeIntervention, clearInterventions, stats } = useHeatGrid();
 
   const handleMapClick = useCallback(
     ({ row, col }) => {
@@ -31,17 +32,22 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <InterventionToolbar activeTool={activeTool} onSelectTool={setActiveTool} />
+      <InterventionToolbar
+        activeTool={activeTool}
+        onSelectTool={setActiveTool}
+        heatmapVisible={heatmapVisible}
+        onToggleHeatmap={() => setHeatmapVisible((v) => !v)}
+        onClearAll={clearInterventions}
+      />
 
       <div className="workspace">
         <div className="map-area">
           <MapView bounds={CBD_BOUNDS} onCellClick={handleMapClick}>
-            {/* ThermalCanvas renders as a Leaflet overlay inside MapView */}
-            <ThermalCanvas grid={grid} bounds={CBD_BOUNDS} placements={placements} />
+            <ThermalCanvas grid={grid} bounds={CBD_BOUNDS} placements={placements} visible={heatmapVisible} />
           </MapView>
         </div>
 
-        <StatsSidebar stats={stats} placements={placements} />
+        <StatsSidebar stats={stats} placements={placements} onRemove={removeIntervention} />
       </div>
     </div>
   );

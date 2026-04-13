@@ -89,11 +89,72 @@
   color: #bfdbfe;
 }
 
-.toolbar-hint {
+.toolbar-actions {
+  display: flex;
+  gap: 6px;
   margin-left: auto;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  background: #243347;
+  border: 1px solid #2e4460;
+  border-radius: 6px;
+  color: #c9d8e8;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.action-btn:hover {
+  background: #2e4460;
+  border-color: #4a7fa8;
+}
+
+.action-btn--active {
+  background: #164e63;
+  border-color: #0ea5e9;
+  color: #e0f2fe;
+}
+
+.action-btn--danger:hover {
+  background: #4c1d1d;
+  border-color: #ef4444;
+  color: #fecaca;
+}
+
+.toolbar-hint {
   font-size: 0.75rem;
   color: #64748b;
   white-space: nowrap;
+}
+
+/* ── Placement list ──────────────────────────────────────────────────────────── */
+.placement-row {
+  align-items: center;
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: #475569;
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 2px 4px;
+  border-radius: 3px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.remove-btn:hover {
+  color: #f87171;
+  background: #2a1a1a;
 }
 
 /* ── Sidebar ─────────────────────────────────────────────────────────────────── */

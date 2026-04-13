@@ -58,5 +58,37 @@ export function useHeatGrid() {
     setPlacements((prev) => [...prev, { row, col, type }]);
   }, []);
 
-  return { grid, placements, applyIntervention, stats, gridRows: GRID_ROWS, gridCols: GRID_COLS };
+  // Rebuild the grid from scratch using only the remaining placements.
+  const rebuildGrid = useCallback((remaining) => {
+    if (!baselineRef.current) return;
+    let g = baselineRef.current.slice();
+    for (const { row, col, type } of remaining) {
+      g = diffuse(g, row, col, type);
+    }
+    setGrid(g);
+    setPlacements(remaining);
+  }, []);
+
+  const removeIntervention = useCallback((index) => {
+    setPlacements((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      // Rebuild grid synchronously so we can pass the new list directly
+      if (baselineRef.current) {
+        let g = baselineRef.current.slice();
+        for (const { row, col, type } of next) {
+          g = diffuse(g, row, col, type);
+        }
+        setGrid(g);
+      }
+      return next;
+    });
+  }, []);
+
+  const clearInterventions = useCallback(() => {
+    if (!baselineRef.current) return;
+    setGrid(baselineRef.current.slice());
+    setPlacements([]);
+  }, []);
+
+  return { grid, placements, applyIntervention, removeIntervention, clearInterventions, stats, gridRows: GRID_ROWS, gridCols: GRID_COLS };
 }
