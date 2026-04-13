@@ -10,11 +10,21 @@
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-height: 0;  /* prevents flex children ignoring overflow */
 }
 
 .map-area {
   flex: 1;
   position: relative;
+  /* Leaflet needs an explicit height on the container */
+  min-height: 0;
+  height: 100%;
+}
+
+/* Leaflet map fill */
+.map-area .leaflet-container {
+  width: 100%;
+  height: 100%;
 }
 
 /* ── Toolbar ─────────────────────────────────────────────────────────────────── */
