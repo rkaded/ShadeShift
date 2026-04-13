@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+.env.local
+*.local
+
+# GeoTIFF is large — track via Git LFS or store in Drive/S3
+public/thermal/*.tif

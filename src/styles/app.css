@@ -1,0 +1,182 @@
+/* ── Layout shell ────────────────────────────────────────────────────────────── */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.workspace {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.map-area {
+  flex: 1;
+  position: relative;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: #1a2535;
+  border-bottom: 1px solid #2a3a50;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.toolbar-brand {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #7dd3fc;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.toolbar-tools {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tool-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 12px;
+  background: #243347;
+  border: 1px solid #2e4460;
+  border-radius: 8px;
+  color: #c9d8e8;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  font-family: inherit;
+}
+
+.tool-btn:hover {
+  background: #2e4460;
+  border-color: #4a7fa8;
+}
+
+.tool-btn--active {
+  background: #1d4ed8;
+  border-color: #3b82f6;
+  color: #fff;
+}
+
+.tool-emoji {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.tool-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tool-cost {
+  font-size: 0.65rem;
+  color: #94a3b8;
+}
+
+.tool-btn--active .tool-cost {
+  color: #bfdbfe;
+}
+
+.toolbar-hint {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────────── */
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: #1a2535;
+  border-left: 1px solid #2a3a50;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sidebar-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #7dd3fc;
+  letter-spacing: 0.03em;
+}
+
+.stat-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-group-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #475569;
+  margin-bottom: 2px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.stat-label {
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.stat-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.stat-value small {
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: #64748b;
+}
+
+/* ── Temperature legend ─────────────────────────────────────────────────────── */
+.sidebar-legend {
+  margin-top: auto;
+}
+
+.legend-bar {
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(
+    to right,
+    #3182bd,
+    #74c476,
+    #ffffb2,
+    #fd8d3c,
+    #bd0026
+  );
+}
+
+.legend-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: #64748b;
+  margin-top: 4px;
+}
