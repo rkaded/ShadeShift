@@ -30,6 +30,7 @@ export function applyIntervention(grid, row, col, type) {
       const c = col + dc;
       if (r < 0 || r >= GRID_ROWS || c < 0 || c >= GRID_COLS) continue;
 
+      if (isNaN(next[r * GRID_COLS + c])) continue; // skip ocean/nodata cells
       const dist = Math.max(Math.abs(dr), Math.abs(dc)); // Chebyshev distance
       const delta = cooling * Math.pow(decay, dist);
       next[r * GRID_COLS + c] -= delta;

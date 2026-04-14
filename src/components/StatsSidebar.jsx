@@ -5,7 +5,6 @@
  * Updates on every grid recalculation.
  */
 
-import React from 'react';
 import { INTERVENTIONS } from '../lib/constants';
 
 function StatRow({ label, value, unit }) {
@@ -69,7 +68,7 @@ export default function StatsSidebar({ stats, placements, onRemove }) {
         <h3 className="stat-group-title">Temperature Scale</h3>
         <div className="legend-bar" />
         <div className="legend-labels">
-          <span>31°C</span><span>40°C</span><span>49°C</span>
+          <span>20°C</span><span>36°C</span><span>52°C</span>
         </div>
       </section>
     </aside>

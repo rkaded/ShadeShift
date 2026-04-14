@@ -8,7 +8,7 @@
 import React from 'react';
 import { INTERVENTIONS } from '../lib/constants';
 
-export default function InterventionToolbar({ activeTool, onSelectTool, heatmapVisible, onToggleHeatmap, onClearAll }) {
+export default function InterventionToolbar({ activeTool, onSelectTool, heatmapVisible, onToggleHeatmap, heatmapOpacity, onOpacityChange, onClearAll }) {
   return (
     <header className="toolbar">
       <span className="toolbar-brand">ShadeShift</span>
@@ -34,8 +34,24 @@ export default function InterventionToolbar({ activeTool, onSelectTool, heatmapV
           onClick={onToggleHeatmap}
           title="Toggle heat map overlay"
         >
-          {heatmapVisible ? '🌡️ Hide Heat Map' : '🌡️ Show Heat Map'}
+          {heatmapVisible ? '🌡️ Hide' : '🌡️ Show'}
         </button>
+
+        <label className="opacity-control" title="Heat map transparency">
+          <span className="opacity-label">Opacity</span>
+          <input
+            type="range"
+            min="0.1"
+            max="1"
+            step="0.05"
+            value={heatmapOpacity}
+            onChange={(e) => onOpacityChange(parseFloat(e.target.value))}
+            className="opacity-slider"
+            disabled={!heatmapVisible}
+          />
+          <span className="opacity-value">{Math.round(heatmapOpacity * 100)}%</span>
+        </label>
+
         <button
           className="action-btn action-btn--danger"
           onClick={onClearAll}

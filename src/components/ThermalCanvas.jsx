@@ -1,11 +1,15 @@
 /**
  * ThermalCanvas
  *
- * Renders the thermal grid as a semi-transparent colour ramp over the Leaflet map
- * using a custom Leaflet Layer backed by an HTML Canvas element.
+ * HeatLayer   – uses L.ImageOverlay so Leaflet owns all zoom/pan projection.
+ *               The grid is baked into a data-URL once per grid change; Leaflet
+ *               CSS-transforms the <img> during animation and reprojects on
+ *               zoomend — zero per-frame JS work on our side.
+ *               CSS blur + multiply blend gives the smooth meteoblue look.
  *
- * Colour scale: blue (cool) → yellow → red (hot), range 24–38 °C.
- * Placed interventions are rendered as emoji markers on a second canvas pass.
+ * MarkerLayer – plain canvas overlay for emoji markers (separate from heat).
+ *
+ * Colour scale: blue → green → yellow → orange → red, 31–49 °C.
  */
 
 import { useEffect, useRef } from 'react';
@@ -13,14 +17,13 @@ import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { GRID_ROWS, GRID_COLS, INTERVENTIONS } from '../lib/constants';
 
-// Colour stops for the temperature ramp (°C → RGB)
-// Range tuned to the real Singapore LST data: ~31–49 °C
+// ── Colour ramp ────────────────────────────────────────────────────────────────
 const STOPS = [
-  { t: 31, r: 49,  g: 130, b: 189 },  // blue   (coolest)
-  { t: 36, r: 116, g: 196, b: 118 },  // green
-  { t: 40, r: 255, g: 255, b: 178 },  // yellow
-  { t: 44, r: 253, g: 141, b: 60  },  // orange
-  { t: 49, r: 189, g: 0,   b: 38  },  // red    (hottest)
+  { t: 20, r: 49,  g: 130, b: 189 },
+  { t: 28, r: 116, g: 196, b: 118 },
+  { t: 34, r: 255, g: 255, b: 178 },
+  { t: 42, r: 253, g: 141, b: 60  },
+  { t: 52, r: 189, g: 0,   b: 38  },
 ];
 
 function tempToRgb(temp) {
@@ -39,143 +42,209 @@ function tempToRgb(temp) {
   ];
 }
 
-// Build a custom Leaflet layer class once
-const ThermalLayer = L.Layer.extend({
-  initialize(options) {
-    L.setOptions(this, options);
-    this._canvas = document.createElement('canvas');
-    this._canvas.style.position = 'absolute';
-    this._canvas.style.pointerEvents = 'none';
-    this._visible = true;
-  },
+/**
+ * Render the grid into a small offscreen canvas and return it as a PNG data URL.
+ * The canvas is only GRID_COLS × GRID_ROWS px — Leaflet will stretch it.
+ * We scale it up 4× before encoding so bilinear interpolation has more pixels
+ * to work with, giving smoother gradients when Leaflet stretches the image.
+ */
+function gridToDataURL(grid) {
+  const SCALE = 4;
+  const W = GRID_COLS * SCALE;
+  const H = GRID_ROWS * SCALE;
 
-  onAdd(map) {
-    map.getPanes().overlayPane.appendChild(this._canvas);
-    map.on('moveend zoomend resize move', this._reset, this);
-    this._reset();
-  },
+  const offscreen = document.createElement('canvas');
+  offscreen.width  = W;
+  offscreen.height = H;
+  const ctx = offscreen.getContext('2d');
+  const imgData = ctx.createImageData(W, H);
+  const d = imgData.data;
 
-  onRemove(map) {
-    map.getPanes().overlayPane.removeChild(this._canvas);
-    map.off('moveend zoomend resize move', this._reset, this);
-  },
+  for (let row = 0; row < GRID_ROWS; row++) {
+    for (let col = 0; col < GRID_COLS; col++) {
+      const temp = grid[row * GRID_COLS + col];
+      const isOcean = isNaN(temp);
+      const [r, g, b] = isOcean ? [0, 0, 0] : tempToRgb(temp);
+      const alpha = isOcean ? 0 : 200;
 
-  _reset() {
-    const map     = this._map;
-    const topLeft = map.containerPointToLayerPoint([0, 0]);
-    L.DomUtil.setPosition(this._canvas, topLeft);
-    const size = map.getSize();
-    this._canvas.width  = size.x;
-    this._canvas.height = size.y;
-    this._draw();
-  },
+      // Fill the SCALE×SCALE block for this cell
+      for (let dy = 0; dy < SCALE; dy++) {
+        for (let dx = 0; dx < SCALE; dx++) {
+          const px = col * SCALE + dx;
+          const py = row * SCALE + dy;
+          const idx = (py * W + px) * 4;
+          d[idx]     = r;
+          d[idx + 1] = g;
+          d[idx + 2] = b;
+          d[idx + 3] = alpha;
+        }
+      }
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return offscreen.toDataURL('image/png');
+}
 
-  setData(grid, placements, bounds) {
-    this._grid       = grid;
-    this._placements = placements;
-    this._bounds     = bounds;
-    if (this._map) this._draw();
-  },
+// ── HeatLayer — thin wrapper that manages an L.ImageOverlay ───────────────────
+
+class HeatLayer {
+  constructor() {
+    this._overlay  = null;
+    this._visible  = true;
+    this._opacity  = 0.60;
+    this._bounds   = null;
+    this._map      = null;
+  }
+
+  addTo(map) {
+    this._map = map;
+    return this;
+  }
+
+  remove() {
+    this._overlay?.remove();
+    this._overlay = null;
+    this._map = null;
+  }
+
+  setData(grid, bounds) {
+    this._bounds = bounds;
+    if (!grid || !this._map) return;
+
+    const url = gridToDataURL(grid);
+    const leafletBounds = L.latLngBounds(
+      [bounds.south, bounds.west],
+      [bounds.north, bounds.east],
+    );
+
+    if (this._overlay) {
+      // Update existing overlay — avoids re-adding to the map
+      this._overlay.setUrl(url);
+      this._overlay.setBounds(leafletBounds);
+    } else {
+      this._overlay = L.imageOverlay(url, leafletBounds, {
+        opacity: this._opacity,
+        interactive: false,
+        className: 'heat-overlay',
+      }).addTo(this._map);
+
+      // Style the <img> element directly after Leaflet creates it
+      this._overlay.on('add', () => this._styleImg());
+      this._styleImg();
+    }
+
+    this._applyVisibility();
+  }
+
+  _styleImg() {
+    const img = this._overlay?.getElement();
+    if (!img) return;
+    img.style.filter         = 'blur(6px)';
+    img.style.imageRendering = 'auto';
+  }
 
   setVisible(visible) {
     this._visible = visible;
-    if (this._map) this._draw();
-  },
+    this._applyVisibility();
+  }
 
-  /**
-   * Project a grid cell's geographic center to a canvas pixel using Leaflet's
-   * coordinate transform. This means the overlay stays locked to the map at
-   * every zoom level and pan position.
-   */
-  _latLngToCanvas(lat, lng) {
-    const pt = this._map.latLngToContainerPoint(L.latLng(lat, lng));
-    // containerPoint is relative to the map div; the canvas is offset by topLeft
-    // (the layer pane transform), so we subtract that offset to get canvas coords.
-    const topLeft = this._map.containerPointToLayerPoint([0, 0]);
-    return { x: pt.x - topLeft.x, y: pt.y - topLeft.y };
-  },
+  setOpacity(opacity) {
+    this._opacity = opacity;
+    this._overlay?.setOpacity(opacity);
+  }
 
-  _draw() {
-    const { _grid: grid, _placements: placements, _bounds: bounds } = this;
-    if (!grid || !bounds) return;
+  _applyVisibility() {
+    const img = this._overlay?.getElement();
+    if (!img) return;
+    img.style.display = this._visible ? '' : 'none';
+  }
+}
 
-    const canvas = this._canvas;
-    const ctx    = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+// ── MarkerLayer — native L.Marker instances with DivIcon ─────────────────────
+//
+// Using L.Marker is the only correct solution for pixel-accurate placement.
+// Leaflet positions each marker through its own projection pipeline in
+// markerPane — no canvas offset math, no pane-transform fighting.
 
-    if (!this._visible) return;
+class MarkerLayer {
+  constructor() {
+    this._markers = [];
+    this._map     = null;
+  }
+
+  addTo(map) {
+    this._map = map;
+    return this;
+  }
+
+  remove() {
+    this._clearMarkers();
+    this._map = null;
+  }
+
+  setData(placements, bounds) {
+    this._clearMarkers();
+    if (!placements?.length || !bounds || !this._map) return;
 
     const { north, south, east, west } = bounds;
     const latStep = (north - south) / GRID_ROWS;
     const lngStep = (east  - west)  / GRID_COLS;
 
-    // Pre-compute pixel positions of every column/row edge so adjacent cells
-    // share exact boundaries (no sub-pixel gaps between cells).
-    const xEdge = new Float64Array(GRID_COLS + 1);
-    const yEdge = new Float64Array(GRID_ROWS + 1);
-
-    for (let c = 0; c <= GRID_COLS; c++) {
-      const lng = west + c * lngStep;
-      xEdge[c] = this._latLngToCanvas(south, lng).x;
-    }
-    for (let r = 0; r <= GRID_ROWS; r++) {
-      const lat = north - r * latStep;
-      yEdge[r] = this._latLngToCanvas(lat, west).y;
-    }
-
-    // Draw thermal cells via fillRect so each cell is geo-projected correctly
-    for (let row = 0; row < GRID_ROWS; row++) {
-      for (let col = 0; col < GRID_COLS; col++) {
-        const temp = grid[row * GRID_COLS + col];
-        const [r, g, b] = tempToRgb(temp);
-
-        const x = xEdge[col];
-        const y = yEdge[row];
-        const w = xEdge[col + 1] - x;
-        const h = yEdge[row + 1] - y;
-
-        ctx.fillStyle = `rgba(${r},${g},${b},0.63)`;
-        ctx.fillRect(x, y, w, h);
-      }
-    }
-
-    // Draw placement markers, geo-projected to their cell centers
     for (const { row, col, type } of placements) {
       const lat = north - (row + 0.5) * latStep;
       const lng = west  + (col + 0.5) * lngStep;
-      const { x, y } = this._latLngToCanvas(lat, lng);
 
-      const cellPx = Math.abs(xEdge[col + 1] - xEdge[col]);
-      ctx.font = `${Math.max(10, cellPx * 1.2)}px serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(INTERVENTIONS[type].emoji, x, y);
+      const icon = L.divIcon({
+        html: `<span class="marker-emoji">${INTERVENTIONS[type].emoji}</span>`,
+        className: '',   // clear Leaflet's default white box class
+        iconSize:   [32, 32],
+        iconAnchor: [16, 16],  // centre of the icon sits on the lat/lng point
+      });
+
+      const marker = L.marker([lat, lng], { icon, interactive: false })
+        .addTo(this._map);
+      this._markers.push(marker);
     }
-  },
-});
+  }
 
-export default function ThermalCanvas({ grid, bounds, placements, visible }) {
-  const map      = useMap();
-  const layerRef = useRef(null);
+  _clearMarkers() {
+    for (const m of this._markers) m.remove();
+    this._markers = [];
+  }
+}
+
+// ── React component ────────────────────────────────────────────────────────────
+
+export default function ThermalCanvas({ grid, bounds, placements, visible, opacity }) {
+  const map       = useMap();
+  const heatRef   = useRef(null);
+  const markerRef = useRef(null);
 
   useEffect(() => {
-    const layer = new ThermalLayer();
-    layer.addTo(map);
-    layerRef.current = layer;
-    return () => layer.remove();
+    const heat   = new HeatLayer();
+    const marker = new MarkerLayer();
+    heat.addTo(map);
+    marker.addTo(map);
+    heatRef.current   = heat;
+    markerRef.current = marker;
+    return () => { heat.remove(); marker.remove(); };
   }, [map]);
 
   useEffect(() => {
-    if (layerRef.current) {
-      layerRef.current.setData(grid, placements, bounds);
-    }
-  }, [grid, placements, bounds]);
+    heatRef.current?.setData(grid, bounds);
+  }, [grid, bounds]);
 
   useEffect(() => {
-    if (layerRef.current) {
-      layerRef.current.setVisible(visible);
-    }
+    markerRef.current?.setData(placements, bounds);
+  }, [placements, bounds]);
+
+  useEffect(() => {
+    heatRef.current?.setVisible(visible);
   }, [visible]);
+
+  useEffect(() => {
+    heatRef.current?.setOpacity(opacity);
+  }, [opacity]);
 
   return null;
 }

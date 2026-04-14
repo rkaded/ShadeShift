@@ -1,6 +1,6 @@
 /**
  * ShadeShift — Google Earth Engine Script
- * Export Landsat 8 Band 10 surface temperature for Singapore CBD
+ * Export Landsat 8 Band 10 surface temperature for all of Singapore
  *
  * Instructions:
  *   1. Open code.earthengine.google.com
@@ -8,22 +8,50 @@
  *   3. Click Run — the export task will appear in the Tasks tab
  *   4. Click RUN next to the task to start the export to Google Drive
  *   5. Download the resulting GeoTIFF and place it at:
- *      public/thermal/singapore_cbd_lst.tif
+ *      public/thermal/singapore_lst.tif
  *
- * Output: single-band GeoTIFF, values in °C, EPSG:4326, ~30m resolution
+ * Output: single-band GeoTIFF, values in °C, EPSG:4326, ~100m resolution
+ * Approximate output size: ~1100 × 1350 px, ~5–10 MB
  */
 
-// ── 1. AOI: Singapore CBD bounding box ────────────────────────────────────────
-var CBD_BOUNDS = ee.Geometry.Rectangle(
-  [103.8198, 1.2728, 103.8648, 1.3048],  // [west, south, east, north]
-  'EPSG:4326',
-  false
+// ── 1. AOI: Singapore mainland + Sentosa ──────────────────────────────────────
+//
+// FAO GAUL 2015 level-1 has per-province polygons for Singapore at reasonable
+// resolution. We take all features for Singapore, explode to individual polygons,
+// keep only those >= 4 km² (mainland + Sentosa), and dissolve.
+
+var SG_BBOX = ee.Geometry.Rectangle(
+  [103.6050, 1.1496, 104.0120, 1.4784],
+  'EPSG:4326', false
 );
+
+var gaul = ee.FeatureCollection('FAO/GAUL/2015/level1')
+  .filter(ee.Filter.eq('ADM0_NAME', 'Singapore'));
+
+// Flatten any multipolygons into individual polygon features
+var sgPolygons = gaul.map(function(f) {
+  var geom = f.geometry();
+  // Force each feature to be a simple polygon by iterating coordinates
+  return ee.FeatureCollection(
+    geom.geometries().map(function(g) {
+      return ee.Feature(ee.Geometry(g));
+    })
+  );
+}).flatten();
+
+// Keep mainland (~720 km²) and Sentosa (~5 km²), drop tiny islets
+var AOI = sgPolygons
+  .map(function(f) {
+    return f.set('area_km2', f.geometry().area(1).divide(1e6));
+  })
+  .filter(ee.Filter.gte('area_km2', 4))
+  .geometry()
+  .dissolve(1);
 
 // ── 2. Landsat 8 Collection 2 Level-2 (SR + ST) ───────────────────────────────
 //    Band ST_B10 = Surface Temperature in Kelvin (scale 0.00341802 + offset 149)
 var L8 = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2')
-  .filterBounds(CBD_BOUNDS)
+  .filterBounds(AOI)
   .filterDate('2023-01-01', '2024-12-31')
   .filter(ee.Filter.lt('CLOUD_COVER', 15));   // keep only clear scenes
 
@@ -48,7 +76,7 @@ var L8_celsius = L8.map(tocelsius);
 var mean_lst = L8_celsius
   .select('LST_Celsius')
   .mean()
-  .clip(CBD_BOUNDS);
+  .clip(AOI);
 
 // ── 5. Quick visual check ──────────────────────────────────────────────────────
 var vizParams = {
@@ -58,14 +86,15 @@ var vizParams = {
   palette: ['#313695', '#74add1', '#ffffbf', '#f46d43', '#a50026']
 };
 
-Map.centerObject(CBD_BOUNDS, 14);
+Map.centerObject(AOI, 11);
+Map.addLayer(AOI, {color: 'white', fillColor: '00000000'}, 'AOI outline');
 Map.addLayer(mean_lst, vizParams, 'Mean LST (°C) 2023-2024');
 
 // Print stats for sanity-check
 var stats = mean_lst.reduceRegion({
   reducer: ee.Reducer.minMax().combine(ee.Reducer.mean(), '', true),
-  geometry: CBD_BOUNDS,
-  scale: 30,
+  geometry: AOI,
+  scale: 100,
   maxPixels: 1e9
 });
 print('LST stats (°C):', stats);
@@ -73,11 +102,11 @@ print('LST stats (°C):', stats);
 // ── 6. Export to Google Drive ──────────────────────────────────────────────────
 Export.image.toDrive({
   image: mean_lst,
-  description: 'ShadeShift_Singapore_CBD_LST_2023_2024',
+  description: 'ShadeShift_Singapore_LST_2023_2024',
   folder: 'ShadeShift',           // Drive folder (created if absent)
-  fileNamePrefix: 'singapore_cbd_lst',
-  region: CBD_BOUNDS,
-  scale: 30,                      // Landsat native resolution (metres)
+  fileNamePrefix: 'singapore_lst',
+  region: AOI,
+  scale: 100,                     // 100m — full island at ~1100×1350px (~5-10MB)
   crs: 'EPSG:4326',
   maxPixels: 1e9,
   fileFormat: 'GeoTIFF',

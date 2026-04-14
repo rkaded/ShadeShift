@@ -3,18 +3,19 @@
  * All lat/lng values are WGS-84.
  */
 
-// Singapore CBD bounding box
+// Singapore full island bounding box
 export const CBD_BOUNDS = {
-  north: 1.3048,
-  south: 1.2728,
-  east:  103.8648,
-  west:  103.8198,
+  north: 1.4784,
+  south: 1.1496,
+  east:  104.0120,
+  west:  103.6050,
 };
 
-// Grid dimensions (cells). Each cell ≈ 30 m (Landsat resolution).
-// Δlat ≈ 0.032°, Δlng ≈ 0.045° → roughly 119 × 150 cells at 0.00027°/cell
-export const GRID_ROWS = 120;
-export const GRID_COLS = 150;
+// Grid dimensions at ~100 m resolution (matching the GEE export scale).
+// Δlat ≈ 0.3288° / 0.0009°/cell ≈ 365 rows
+// Δlng ≈ 0.4070° / 0.0009°/cell ≈ 452 cols
+export const GRID_ROWS = 365;
+export const GRID_COLS = 452;
 
 /**
  * Intervention catalogue

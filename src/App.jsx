@@ -4,23 +4,13 @@ import ThermalCanvas from './components/ThermalCanvas';
 import InterventionToolbar from './components/InterventionToolbar';
 import StatsSidebar from './components/StatsSidebar';
 import { useHeatGrid } from './hooks/useHeatGrid';
-import { CBD_BOUNDS } from './lib/constants';
 import './styles/app.css';
 
-/**
- * Root layout:
- *
- *  ┌──────────────────────────────┬────────────────┐
- *  │  InterventionToolbar (top)   │                │
- *  ├──────────────────────────────┤  StatsSidebar  │
- *  │  MapView + ThermalCanvas     │                │
- *  │  (fills remaining height)    │                │
- *  └──────────────────────────────┴────────────────┘
- */
 export default function App() {
   const [activeTool, setActiveTool] = useState(null);
   const [heatmapVisible, setHeatmapVisible] = useState(true);
-  const { grid, placements, applyIntervention, removeIntervention, clearInterventions, stats } = useHeatGrid();
+  const [heatmapOpacity, setHeatmapOpacity] = useState(0.60);
+  const { grid, bounds, placements, applyIntervention, removeIntervention, clearInterventions, stats } = useHeatGrid();
 
   const handleMapClick = useCallback(
     ({ row, col }) => {
@@ -37,13 +27,15 @@ export default function App() {
         onSelectTool={setActiveTool}
         heatmapVisible={heatmapVisible}
         onToggleHeatmap={() => setHeatmapVisible((v) => !v)}
+        heatmapOpacity={heatmapOpacity}
+        onOpacityChange={setHeatmapOpacity}
         onClearAll={clearInterventions}
       />
 
       <div className="workspace">
         <div className="map-area">
-          <MapView bounds={CBD_BOUNDS} onCellClick={handleMapClick}>
-            <ThermalCanvas grid={grid} bounds={CBD_BOUNDS} placements={placements} visible={heatmapVisible} />
+          <MapView bounds={bounds} onCellClick={handleMapClick}>
+            <ThermalCanvas grid={grid} bounds={bounds} placements={placements} visible={heatmapVisible} opacity={heatmapOpacity} />
           </MapView>
         </div>
 
