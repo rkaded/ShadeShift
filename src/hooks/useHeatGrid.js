@@ -45,12 +45,12 @@ export function useHeatGrid() {
     setStats({ ...raw, totalCost, energySavingsKwh, equityScore });
   }, [grid, placements]);
 
-  const applyIntervention = useCallback((row, col, type) => {
+  const applyIntervention = useCallback((row, col, type, lat, lng) => {
     setGrid((prev) => {
       if (!prev) return prev;
       return diffuse(prev, row, col, type);
     });
-    setPlacements((prev) => [...prev, { row, col, type }]);
+    setPlacements((prev) => [...prev, { row, col, type, lat, lng }]);
   }, []);
 
   const removeIntervention = useCallback((index) => {

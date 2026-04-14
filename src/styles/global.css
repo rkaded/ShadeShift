@@ -1,12 +1,61 @@
+/* ── Design tokens (from new frontend) ───────────────────────────────────────── */
+:root {
+  --background:          hsl(40 20% 96%);
+  --foreground:          hsl(40 10% 12%);
+  --card:                hsl(40 15% 99%);
+  --primary:             hsl(174 52% 40%);
+  --primary-foreground:  hsl(0 0% 100%);
+  --secondary:           hsl(40 10% 93%);
+  --muted:               hsl(40 10% 91%);
+  --muted-foreground:    hsl(40 8% 52%);
+  --accent:              hsl(174 52% 40%);
+  --destructive:         hsl(0 65% 52%);
+  --destructive-fg:      hsl(0 0% 100%);
+  --border:              hsl(40 10% 88%);
+  --input:               hsl(40 10% 88%);
+  --ring:                hsl(174 52% 40%);
+  --radius:              0.5rem;
+
+  --surface:             hsl(40 15% 99%);
+  --surface-raised:      hsl(0 0% 100%);
+  --surface-border:      hsl(40 10% 90%);
+  --surface-foreground:  hsl(40 10% 12%);
+  --surface-muted:       hsl(40 8% 52%);
+
+  --tool-tree:           hsl(152 45% 42%);
+  --tool-shade:          hsl(215 50% 52%);
+  --tool-roof:           hsl(174 42% 38%);
+  --tool-pavement:       hsl(32 65% 52%);
+  --tool-water:          hsl(200 65% 48%);
+
+  --heat-hot:            hsl(0 75% 52%);
+  --heat-warm:           hsl(35 80% 52%);
+  --heat-cool:           hsl(200 65% 48%);
+}
+
+/* ── Reset ───────────────────────────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  border-color: var(--border);
 }
 
 html, body, #root {
   height: 100%;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: #0f1923;
-  color: #e8edf2;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  background: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Keyframes ───────────────────────────────────────────────────────────────── */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
 }

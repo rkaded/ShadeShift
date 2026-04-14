@@ -190,9 +190,10 @@ class MarkerLayer {
     const latStep = (north - south) / GRID_ROWS;
     const lngStep = (east  - west)  / GRID_COLS;
 
-    for (const { row, col, type } of placements) {
-      const lat = north - (row + 0.5) * latStep;
-      const lng = west  + (col + 0.5) * lngStep;
+    for (const { row, col, type, lat: storedLat, lng: storedLng } of placements) {
+      // Use exact click coordinates if stored, otherwise fall back to cell centre
+      const lat = storedLat ?? (north - (row + 0.5) * latStep);
+      const lng = storedLng ?? (west  + (col + 0.5) * lngStep);
 
       const icon = L.divIcon({
         html: `<span class="marker-emoji">${INTERVENTIONS[type].emoji}</span>`,
