@@ -38,10 +38,10 @@
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* ── Active tool hint (top-right) ─────────────────────────────────────────────── */
+/* ── Active tool hint (top-right, below advisor trigger) ──────────────────────── */
 .tool-hint {
   position: absolute;
-  top: 16px;
+  top: 52px;
   right: 16px;
   z-index: 1000;
   background: var(--surface-raised);
@@ -466,4 +466,170 @@
 /* ── Heat overlay ────────────────────────────────────────────────────────────── */
 .heat-overlay {
   transition: opacity 0.2s ease;
+}
+
+/* ── AI Advisor ──────────────────────────────────────────────────────────────── */
+.advisor-trigger {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--surface-border);
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--primary);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.advisor-trigger:hover {
+  background: var(--muted);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+}
+
+.advisor-panel {
+  position: absolute;
+  top: 56px;
+  right: 16px;
+  z-index: 1001;
+  width: 300px;
+  background: var(--surface-raised);
+  border: 1px solid var(--surface-border);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.advisor-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.advisor-panel__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.advisor-panel__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.advisor-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--surface-muted);
+  transition: background 0.15s, color 0.15s;
+}
+
+.advisor-icon-btn:hover {
+  background: var(--muted);
+  color: var(--surface-foreground);
+}
+
+.advisor-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.advisor-panel__body {
+  padding: 14px 16px;
+  min-height: 80px;
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.advisor-para {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--surface-foreground);
+  margin: 0;
+}
+
+.advisor-error {
+  font-size: 11px;
+  color: var(--destructive);
+  margin: 0;
+}
+
+.advisor-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 13px;
+  background: var(--primary);
+  border-radius: 1px;
+  vertical-align: middle;
+  animation: blink 0.9s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+.advisor-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.advisor-skeleton__line {
+  height: 10px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    var(--muted) 25%,
+    var(--border) 50%,
+    var(--muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.advisor-panel__footer {
+  padding: 8px 16px;
+  border-top: 1px solid var(--surface-border);
+  font-size: 10px;
+  color: var(--surface-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }

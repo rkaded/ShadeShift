@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import ThermalCanvas from './components/ThermalCanvas';
 import ToolRail from './components/ToolRail';
 import StatsBar from './components/StatsBar';
+import AdvisorPanel from './components/AdvisorPanel';
 import { useHeatGrid } from './hooks/useHeatGrid';
 import { GRID_ROWS, GRID_COLS } from './lib/constants';
 import './styles/app.css';
@@ -105,6 +106,9 @@ export default function App() {
         onOpacityChange={setHeatmapOpacity}
         onClearAll={clearInterventions}
       />
+
+      {/* AI Advisor — top right */}
+      <AdvisorPanel stats={stats} placements={placements} bounds={bounds} />
 
       {/* Stats bar — bottom */}
       <StatsBar
