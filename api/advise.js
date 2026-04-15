@@ -1,24 +1,21 @@
 /**
- * /api/advise  — streaming Claude advisor endpoint
+ * /api/advise — Vercel serverless function + Vite dev middleware
  *
- * Accepts POST { stats, placements, bounds }
- * Streams back text/event-stream (SSE) chunks.
- *
- * Used by:
- *   - vite.config.js plugin (dev)
- *   - server.js (production Express)
+ * Vercel automatically serves files in /api as serverless functions.
+ * The Vite plugin in vite.config.js calls handleAdvise() directly for dev.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import { INTERVENTIONS_META } from './interventionsMeta.js';
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const INTERVENTIONS_META = {
+  tree:         { label: 'Tree',            emoji: '🌳', cooling: 1.8, cost: 800   },
+  shade:        { label: 'Shade Structure',  emoji: '⛱️', cooling: 1.2, cost: 2000  },
+  greenRoof:    { label: 'Green Roof',       emoji: '🏢', cooling: 0.8, cost: 15000 },
+  coolPavement: { label: 'Cool Pavement',    emoji: '🛤️', cooling: 0.5, cost: 50    },
+  water:        { label: 'Water Feature',    emoji: '⛲', cooling: 2.1, cost: 50000 },
+};
 
-/**
- * Build a concise but information-rich prompt from live simulation state.
- */
 function buildPrompt({ stats, placements, bounds }) {
-  // Summarise placements by type
   const counts = {};
   for (const { type } of placements) counts[type] = (counts[type] ?? 0) + 1;
 
@@ -44,14 +41,10 @@ function buildPrompt({ stats, placements, bounds }) {
   ${isEmpty ? 'None yet.' : placementSummary}
 
 ${isEmpty
-  ? 'The user has not placed any interventions yet. Suggest where to start for maximum impact in Singapore\'s urban heat context.'
+  ? "The user has not placed any interventions yet. Suggest where to start for maximum impact in Singapore's urban heat context."
   : 'Based on what has been placed, suggest what to add or where to focus next for the greatest additional cooling impact.'}`;
 }
 
-/**
- * Handle the request — works with both raw Node IncomingMessage (Vite plugin)
- * and Express req/res objects.
- */
 export async function handleAdvise(req, res) {
   if (req.method !== 'POST') {
     res.statusCode = 405;
@@ -59,7 +52,6 @@ export async function handleAdvise(req, res) {
     return;
   }
 
-  // Parse body — Express already parses it; for raw Node we need to read it
   let body = req.body;
   if (!body) {
     const chunks = [];
@@ -75,6 +67,8 @@ export async function handleAdvise(req, res) {
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('Access-Control-Allow-Origin', '*');
 
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
   try {
     const stream = client.messages.stream({
       model: 'claude-haiku-4-5-20251001',
@@ -83,12 +77,8 @@ export async function handleAdvise(req, res) {
     });
 
     for await (const event of stream) {
-      if (
-        event.type === 'content_block_delta' &&
-        event.delta?.type === 'text_delta'
-      ) {
-        const data = JSON.stringify({ text: event.delta.text });
-        res.write(`data: ${data}\n\n`);
+      if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
+        res.write(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`);
       }
     }
 
@@ -99,4 +89,9 @@ export async function handleAdvise(req, res) {
   } finally {
     res.end();
   }
+}
+
+// ── Vercel serverless entry point ─────────────────────────────────────────────
+export default async function handler(req, res) {
+  await handleAdvise(req, res);
 }
