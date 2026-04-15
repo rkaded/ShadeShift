@@ -4,4 +4,4 @@ dist/
 .env.local
 *.local
 
-# GeoTIFF tracked via Git LFS (see .gitattributes)
+.vercel
