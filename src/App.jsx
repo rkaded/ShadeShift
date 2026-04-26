@@ -9,6 +9,7 @@ import AdvisorPanel from './components/AdvisorPanel';
 import { useHeatGrid } from './hooks/useHeatGrid';
 import { GRID_ROWS, GRID_COLS } from './lib/constants';
 import './styles/app.css';
+import { Analytics } from '@vercel/analytics/react';
 
 const TILE_URL  = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
 const TILE_ATTR = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>';
@@ -119,6 +120,7 @@ export default function App() {
         onOpacityChange={setHeatmapOpacity}
         heatmapVisible={heatmapVisible}
       />
+      <Analytics />
     </div>
   );
 }
